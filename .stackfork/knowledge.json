@@ -4,7 +4,7 @@
   "inputs": [
     {
       "path": "docker-compose.yml",
-      "sha256": "5d0db17cbfa204cd1ea6c63dc5651ddcb8fe252f46e6cc6e96af852d23cdb090"
+      "sha256": "5da6106d7d2d85ab54d180a39c3ee64c9f5cf550dac7c1c9a53069cbfc4321f2"
     }
   ],
   "facts": {
@@ -78,8 +78,8 @@
           "8080:80"
         ],
         "volumes": [
-          "bind:/Users/pedropinheiro/Work/Pedro/stackfork/presentation/projects/acme-shop/web/nginx.conf",
-          "bind:/Users/pedropinheiro/Work/Pedro/stackfork/presentation/projects/acme-shop/web/public"
+          "bind:/Users/pedropinheiro/Work/Pedro/stackfork/presentation/projects/acme-shop/.worktrees/feature-black-friday/web/nginx.conf",
+          "bind:/Users/pedropinheiro/Work/Pedro/stackfork/presentation/projects/acme-shop/.worktrees/feature-black-friday/web/public"
         ],
         "networks": [
           "default"
