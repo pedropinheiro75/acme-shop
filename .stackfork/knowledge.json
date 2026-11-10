@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "status": "draft",
+  "status": "verified",
   "inputs": [
     {
       "path": "docker-compose.yml",
@@ -250,5 +250,31 @@
       "mode": "hot",
       "note": "nginx serves web/public from a bind mount: edit and refresh"
     }
-  ]
+  ],
+  "verification": {
+    "date": "2026-11-10",
+    "checks": [
+      "database identity per worktree",
+      "order paid by the worker and receipt in Mailpit"
+    ],
+    "confirmation": "yes, the plan starts all seven services, migrates and seeds",
+    "entry": "web:80",
+    "links": [
+      {
+        "name": "Mailpit",
+        "answered": true,
+        "status": 200
+      },
+      {
+        "name": "Adminer",
+        "answered": true,
+        "status": 200
+      },
+      {
+        "name": "Stack JSON",
+        "answered": true,
+        "status": 200
+      }
+    ]
+  }
 }

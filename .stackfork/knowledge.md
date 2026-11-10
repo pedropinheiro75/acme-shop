@@ -1,6 +1,6 @@
 # Project knowledge
 
-Status: **draft**
+Status: **verified**
 
 ## Compose
 
@@ -61,4 +61,10 @@ Status: recorded
 
 - Q: Where do migrations and seed run?
   A: In the api container: node src/migrate.js on every start (idempotent), node src/seed.js only when the data volume is new.
+
+## Verified
+
+- Date: 2026-11-10
+- Checks: database identity per worktree, order paid by the worker and receipt in Mailpit
+- Confirmation: "yes, the plan starts all seven services, migrates and seeds"
 
