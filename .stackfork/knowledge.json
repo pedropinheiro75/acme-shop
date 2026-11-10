@@ -1,0 +1,254 @@
+{
+  "schema": 2,
+  "status": "draft",
+  "inputs": [
+    {
+      "path": "docker-compose.yml",
+      "sha256": "5d0db17cbfa204cd1ea6c63dc5651ddcb8fe252f46e6cc6e96af852d23cdb090"
+    }
+  ],
+  "facts": {
+    "compose_files": [
+      "docker-compose.yml"
+    ],
+    "services": [
+      {
+        "name": "adminer",
+        "image": "adminer:4",
+        "ports": [
+          "8081:8080"
+        ],
+        "networks": [
+          "default"
+        ]
+      },
+      {
+        "name": "api",
+        "build": true,
+        "ports": [
+          "3000:3000"
+        ],
+        "networks": [
+          "default"
+        ]
+      },
+      {
+        "name": "mailpit",
+        "image": "axllent/mailpit:v1.21",
+        "ports": [
+          "8025:8025",
+          "1025:1025"
+        ],
+        "networks": [
+          "default"
+        ]
+      },
+      {
+        "name": "postgres",
+        "image": "postgres:17-alpine",
+        "db_engine": "postgres",
+        "db_major_version": "17",
+        "ports": [
+          "5432:5432"
+        ],
+        "volumes": [
+          "pgdata"
+        ],
+        "networks": [
+          "default"
+        ],
+        "healthcheck": true
+      },
+      {
+        "name": "redis",
+        "image": "redis:7-alpine",
+        "db_engine": "redis",
+        "db_major_version": "7",
+        "ports": [
+          "6379:6379"
+        ],
+        "networks": [
+          "default"
+        ]
+      },
+      {
+        "name": "web",
+        "image": "nginx:1.27-alpine",
+        "ports": [
+          "8080:80"
+        ],
+        "volumes": [
+          "bind:/Users/pedropinheiro/Work/Pedro/stackfork/presentation/projects/acme-shop/web/nginx.conf",
+          "bind:/Users/pedropinheiro/Work/Pedro/stackfork/presentation/projects/acme-shop/web/public"
+        ],
+        "networks": [
+          "default"
+        ]
+      },
+      {
+        "name": "worker",
+        "build": true,
+        "networks": [
+          "default"
+        ]
+      }
+    ],
+    "migration_dirs": [
+      "api/migrations"
+    ]
+  },
+  "refusals": [
+    {
+      "kind": "renamed_volume",
+      "target": "volumes.pgdata",
+      "action": "rewrite",
+      "reason": "volumes.pgdata: renamed to sf-learn_pgdata so concurrent stacks don't collide"
+    },
+    {
+      "kind": "renamed_network",
+      "target": "networks.default",
+      "action": "rewrite",
+      "reason": "networks.default: renamed to sf-learn_default so concurrent stacks don't collide"
+    },
+    {
+      "kind": "build_image",
+      "target": "services.worker",
+      "action": "rewrite",
+      "reason": "services.worker: image renamed to sf-learn-worker:dev for the isolated build"
+    },
+    {
+      "kind": "published_port",
+      "target": "services.adminer.ports[0]",
+      "action": "rewrite",
+      "reason": "services.adminer: published port stripped so Docker assigns a random host port"
+    },
+    {
+      "kind": "build_image",
+      "target": "services.api",
+      "action": "rewrite",
+      "reason": "services.api: image renamed to sf-learn-api:dev for the isolated build"
+    },
+    {
+      "kind": "published_port",
+      "target": "services.api.ports[0]",
+      "action": "rewrite",
+      "reason": "services.api: published port stripped so Docker assigns a random host port"
+    },
+    {
+      "kind": "published_port",
+      "target": "services.mailpit.ports[0]",
+      "action": "rewrite",
+      "reason": "services.mailpit: published port stripped so Docker assigns a random host port"
+    },
+    {
+      "kind": "published_port",
+      "target": "services.mailpit.ports[1]",
+      "action": "rewrite",
+      "reason": "services.mailpit: published port stripped so Docker assigns a random host port"
+    },
+    {
+      "kind": "published_port",
+      "target": "services.postgres.ports[0]",
+      "action": "rewrite",
+      "reason": "services.postgres: published port stripped so Docker assigns a random host port"
+    },
+    {
+      "kind": "published_port",
+      "target": "services.redis.ports[0]",
+      "action": "rewrite",
+      "reason": "services.redis: published port stripped so Docker assigns a random host port"
+    },
+    {
+      "kind": "published_port",
+      "target": "services.web.ports[0]",
+      "action": "rewrite",
+      "reason": "services.web: published port stripped so Docker assigns a random host port"
+    }
+  ],
+  "plan": {
+    "modes": [
+      "container"
+    ],
+    "app_service": "web",
+    "status": "recorded",
+    "steps": [
+      {
+        "id": "prepare",
+        "kind": "prepare",
+        "args": [
+          "-f",
+          "docker-compose.yml"
+        ]
+      },
+      {
+        "id": "up",
+        "kind": "compose-up"
+      },
+      {
+        "id": "migrate",
+        "kind": "exec",
+        "service": "api",
+        "cmd": "node src/migrate.js",
+        "once": "schema"
+      },
+      {
+        "id": "seed",
+        "kind": "exec",
+        "service": "api",
+        "cmd": "node src/seed.js",
+        "once": "data"
+      }
+    ]
+  },
+  "answers": [
+    {
+      "question": "Where do migrations and seed run?",
+      "answer": "In the api container: node src/migrate.js on every start (idempotent), node src/seed.js only when the data volume is new."
+    }
+  ],
+  "secrets": [
+    {
+      "name": "STRIPE_SECRET_KEY",
+      "hint": "Stripe test key (sk_test_...), used by api and worker"
+    },
+    {
+      "name": "JWT_SECRET",
+      "hint": "Random string that signs session tokens"
+    }
+  ],
+  "entry": {
+    "service": "web",
+    "port": 80
+  },
+  "links": [
+    {
+      "name": "Mailpit",
+      "service": "mailpit",
+      "port": 8025
+    },
+    {
+      "name": "Adminer",
+      "service": "adminer",
+      "port": 8080
+    },
+    {
+      "name": "Stack JSON",
+      "path": "/api/stack"
+    }
+  ],
+  "reload": [
+    {
+      "service": "api",
+      "mode": "rebuild"
+    },
+    {
+      "service": "worker",
+      "mode": "rebuild"
+    },
+    {
+      "service": "web",
+      "mode": "hot",
+      "note": "nginx serves web/public from a bind mount: edit and refresh"
+    }
+  ]
+}

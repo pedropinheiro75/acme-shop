@@ -98,7 +98,7 @@
     }
 
     async function loadEnvironment() {
-      const e = await fetch('/api/environment').then((r) => r.json());
+      const e = await fetch('/api/stack').then((r) => r.json());
       $('store').innerHTML = e.storeName.replace(/(\S+)$/, '<span>$1</span>');
       if (e.announcement) { $('banner').textContent = e.announcement; $('banner').style.display = 'block'; }
       const secrets = Object.entries(e.secrets).map(([k, v]) =>

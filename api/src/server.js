@@ -46,7 +46,7 @@ async function environmentInfo() {
 
 const routes = {
   'GET /api/health': async () => ({ ok: true }),
-  'GET /api/environment': environmentInfo,
+  'GET /api/stack': environmentInfo,
   'GET /api/products': async () => (await pool.query('SELECT * FROM products ORDER BY id')).rows,
   'GET /api/orders': async () =>
     (
