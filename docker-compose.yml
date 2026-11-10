@@ -26,7 +26,7 @@ services:
       DATABASE_URL: postgres://shop:shop@postgres:5432/shop
       REDIS_URL: redis://redis:6379
       STORE_NAME: "Acme Shop"
-      ANNOUNCEMENT: ""
+      ANNOUNCEMENT: "🖤 Black Friday: up to 30% off, this week only"
     secrets:
       - STRIPE_SECRET_KEY
       - JWT_SECRET

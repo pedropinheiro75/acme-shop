@@ -78,7 +78,9 @@
         <div class="emoji">${p.emoji}</div>
         <div class="name">${p.name}</div>
         <div class="desc">${p.description}</div>
-        <div class="price">${money(p.price_cents)}</div>
+        <div class="price">${p.discount_pct
+          ? `<s style="color:var(--muted);font-weight:400">${money(p.price_cents)}</s> ${money(Math.round(p.price_cents * (1 - p.discount_pct / 100)))} <span class="pill paid">-${p.discount_pct}%</span>`
+          : money(p.price_cents)}</div>
         <button onclick="buy(${p.id})">Buy</button>
       </div>`;
     }
