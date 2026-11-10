@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Acme Shop</title>
+  <style>
+    :root {
+      --bg: #f6f7fb; --card: #ffffff; --ink: #14161f; --muted: #6b7084;
+      --brand: #4f46e5; --brand-ink: #ffffff; --line: #e6e8f0; --ok: #059669; --warn: #d97706;
+      --banner-bg: #eef2ff; --banner-ink: #3730a3;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--ink); }
+    header { display: flex; align-items: center; justify-content: space-between; padding: 18px 32px; background: var(--card); border-bottom: 1px solid var(--line); }
+    .logo { font-weight: 800; font-size: 22px; letter-spacing: -0.02em; }
+    .logo span { color: var(--brand); }
+    .host { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); background: var(--bg); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); }
+    .banner { display: none; padding: 12px 32px; background: var(--banner-bg); color: var(--banner-ink); font-weight: 600; text-align: center; }
+    main { max-width: 1180px; margin: 0 auto; padding: 28px 32px 60px; display: grid; grid-template-columns: 1fr 340px; gap: 28px; }
+    h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 14px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+    .product { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 6px; position: relative; }
+    .emoji { font-size: 40px; }
+    .name { font-weight: 700; }
+    .desc { color: var(--muted); font-size: 13px; flex: 1; }
+    .price { font-weight: 800; font-size: 18px; }
+    button { border: 0; border-radius: 10px; padding: 10px 14px; background: var(--brand); color: var(--brand-ink); font-weight: 700; cursor: pointer; }
+    button:active { transform: scale(.98); }
+    aside { display: flex; flex-direction: column; gap: 22px; }
+    .panel { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+    .order { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }
+    .order:last-child { border-bottom: 0; }
+    .pill { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; text-transform: uppercase; }
+    .pill.pending { background: #fef3c7; color: var(--warn); }
+    .pill.paid { background: #d1fae5; color: var(--ok); }
+    .pill.failed { background: #fee2e2; color: #b91c1c; }
+    .kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 13px; }
+    .kv dt { color: var(--muted); }
+    .kv dd { margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all; }
+    .chip { display: inline-block; font: 11px ui-monospace, Menlo, monospace; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; margin: 0 4px 4px 0; }
+    .empty { color: var(--muted); font-size: 13px; }
+    @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo" id="store">Acme <span>Shop</span></div>
+    <div class="host" id="host"></div>
+  </header>
+  <div class="banner" id="banner"></div>
+
+  <main>
+    <section>
+      <h2>Products</h2>
+      <div class="grid" id="products"><div class="empty">Loading…</div></div>
+    </section>
+
+    <aside>
+      <div class="panel">
+        <h2>Latest orders</h2>
+        <div id="orders"><div class="empty">No orders yet. Buy something!</div></div>
+      </div>
+      <div class="panel">
+        <h2>This environment</h2>
+        <dl class="kv" id="env"></dl>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const money = (c) => '$' + (c / 100).toFixed(2);
+    $('host').textContent = location.host;
+
+    function renderProduct(p) {
+      return `<div class="product">
+        <div class="emoji">${p.emoji}</div>
+        <div class="name">${p.name}</div>
+        <div class="desc">${p.description}</div>
+        <div class="price">${money(p.price_cents)}</div>
+        <button onclick="buy(${p.id})">Buy</button>
+      </div>`;
+    }
+
+    async function loadProducts() {
+      const products = await fetch('/api/products').then((r) => r.json());
+      $('products').innerHTML = products.length ? products.map(renderProduct).join('') : '<div class="empty">No products. Was the database seeded?</div>';
+    }
+
+    async function loadOrders() {
+      const orders = await fetch('/api/orders').then((r) => r.json());
+      if (!Array.isArray(orders) || !orders.length) return;
+      $('orders').innerHTML = orders.map((o) => `<div class="order">
+        <span>#${o.id} ${o.emoji} ${o.product}</span>
+        <span>${money(o.amount_cents)} <span class="pill ${o.status}">${o.status}</span></span>
+      </div>`).join('');
+    }
+
+    async function loadEnvironment() {
+      const e = await fetch('/api/environment').then((r) => r.json());
+      $('store').innerHTML = e.storeName.replace(/(\S+)$/, '<span>$1</span>');
+      if (e.announcement) { $('banner').textContent = e.announcement; $('banner').style.display = 'block'; }
+      const secrets = Object.entries(e.secrets).map(([k, v]) =>
+        `<span class="chip">${k} ${v.loaded ? '✓ ' + v.fingerprint : '✗ missing'}</span>`).join('');
+      $('env').innerHTML = `
+        <dt>Address</dt><dd>${location.host}</dd>
+        <dt>DB cluster</dt><dd>${e.databaseCluster}</dd>
+        <dt>Migrations</dt><dd>${e.migrations.map((m) => `<span class="chip">${m}</span>`).join('') || '—'}</dd>
+        <dt>Data</dt><dd>${e.counts.products ?? 0} products · ${e.counts.customers ?? 0} customers · ${e.counts.orders ?? 0} orders</dd>
+        <dt>Secrets</dt><dd>${secrets}</dd>
+        <dt>Container</dt><dd>${e.container}</dd>`;
+    }
+
+    async function buy(id) {
+      await fetch('/api/orders', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ productId: id, email: 'demo@acme.test' }) });
+      loadOrders(); loadEnvironment();
+    }
+
+    loadProducts(); loadOrders(); loadEnvironment();
+    setInterval(() => { loadOrders(); loadEnvironment(); }, 1500);
+  </script>
+</body>
+</html>

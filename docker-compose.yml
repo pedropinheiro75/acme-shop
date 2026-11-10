@@ -1,0 +1,110 @@
+# acme-shop: a storefront with 7 services, started 100% in Docker.
+# Nothing in this file knows about stackfork. stackfork reads it as-is and
+# isolates every copy (ports, volumes, networks, container names, images).
+
+services:
+  # Storefront (static HTML served by nginx, /api proxied to the api service)
+  web:
+    image: nginx:1.27-alpine
+    labels:
+      io.stackfork.http: "80"
+    volumes:
+      - ./web/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./web/public:/usr/share/nginx/html:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+  # REST API (Node 22). Reads secrets from /run/secrets.
+  api:
+    build: ./api
+    command: ["node", "src/server.js"]
+    labels:
+      io.stackfork.http: "3000"
+    environment:
+      DATABASE_URL: postgres://shop:shop@postgres:5432/shop
+      REDIS_URL: redis://redis:6379
+      STORE_NAME: "Acme Shop"
+      ANNOUNCEMENT: ""
+    secrets:
+      - STRIPE_SECRET_KEY
+      - JWT_SECRET
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  # Background worker: charges orders and sends the confirmation email.
+  worker:
+    build: ./api
+    command: ["node", "src/worker.js"]
+    environment:
+      DATABASE_URL: postgres://shop:shop@postgres:5432/shop
+      REDIS_URL: redis://redis:6379
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+    secrets:
+      - STRIPE_SECRET_KEY
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  postgres:
+    image: postgres:17-alpine
+    labels:
+      io.stackfork.data: pgdata
+    environment:
+      POSTGRES_USER: shop
+      POSTGRES_PASSWORD: shop
+      POSTGRES_DB: shop
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shop -d shop"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  # Catches every email the worker sends. One inbox per environment.
+  mailpit:
+    image: axllent/mailpit:v1.21
+    labels:
+      io.stackfork.http: "8025"
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+  # Database browser.
+  adminer:
+    image: adminer:4
+    labels:
+      io.stackfork.http: "8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    ports:
+      - "8081:8080"
+
+# Real secrets never live in the repository. Compose reads them from the
+# environment, and stackfork fills that environment from the OS keychain
+# (or 1Password) at start, without ever printing the value.
+secrets:
+  STRIPE_SECRET_KEY:
+    environment: STRIPE_SECRET_KEY
+  JWT_SECRET:
+    environment: JWT_SECRET
+
+volumes:
+  pgdata:
