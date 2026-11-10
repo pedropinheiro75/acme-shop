@@ -32,6 +32,10 @@ async function main() {
   for (const [email, name] of customers) {
     await pool.query(`INSERT INTO customers (email, name) VALUES ($1, $2) ON CONFLICT (email) DO NOTHING`, [email, name]);
   }
+  // Same discounts as migrations/003: a new database gets its products
+  // after the migrations ran, so the migration's UPDATE found nothing.
+  await pool.query('UPDATE products SET discount_pct = 30 WHERE id % 2 = 0');
+  await pool.query('UPDATE products SET discount_pct = 15 WHERE id % 3 = 0 AND discount_pct = 0');
   console.log(`seed: ${products.length} products, ${customers.length} customers`);
   await pool.end();
 }
